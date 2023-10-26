@@ -17,6 +17,7 @@ const PING_TIMEOUT = 5000;
 const PING = Buffer.from([0x89, 0]);
 const OPCODE_SHORT = 0x81;
 const LEN_16_BIT = 126;
+const LEN_64_BIT = 127;
 
 const acceptKey = (key) => {
   const hash = crypto.createHash('sha1');
@@ -38,11 +39,23 @@ const parseFrame = (frame) => {
   return { mask, data };
 };
 
-const sendShort = (socket, text) => {
-  const meta = Buffer.alloc(2);
+const sendMessage = (socket, text) => {
   const data = Buffer.from(text);
+  let meta = Buffer.alloc(2);
+  const length = data.length;
   meta[0] = OPCODE_SHORT;
-  meta[1] = data.length;
+  if (length <= 125) {
+    meta[1] = length;
+  } else if (length < 65536) {
+    const len = Buffer.from([(length & 0xFF00) >> 8, length & 0x00FF]);
+    meta = Buffer.concat([meta, len]);
+    meta[1] = LEN_16_BIT;
+  } else {
+    const len = Buffer.alloc(8);
+    len.writeBigInt64BE(BigInt(length), 0);
+    meta = Buffer.concat([meta, len]);
+    meta[1] = LEN_64_BIT;
+  }
   const frame = Buffer.concat([meta, data]);
   socket.write(frame);
 };
@@ -67,7 +80,7 @@ server.on('upgrade', (req, socket, head) => {
     const frame = parseFrame(data);
     const msg = unmask(frame.data, frame.mask);
     const text = msg.toString();
-    sendShort(socket, `Echo "${text}"`);
+    sendMessage(socket, `Echo "${text}"`);
     console.log('Message:', text);
   };
 
