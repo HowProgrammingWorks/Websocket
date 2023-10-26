@@ -17,6 +17,7 @@ const PING_TIMEOUT = 5000;
 const PING = Buffer.from([0x89, 0]);
 const OPCODE_SHORT = 0x81;
 const LEN_16_BIT = 126;
+const MAX_16_BIT = 65536;
 const LEN_64_BIT = 127;
 
 const acceptKey = (key) => {
@@ -44,9 +45,9 @@ const sendMessage = (socket, text) => {
   let meta = Buffer.alloc(2);
   const length = data.length;
   meta[0] = OPCODE_SHORT;
-  if (length <= 125) {
+  if (length < LEN_16_BIT) {
     meta[1] = length;
-  } else if (length < 65536) {
+  } else if (length < MAX_16_BIT) {
     const len = Buffer.from([(length & 0xFF00) >> 8, length & 0x00FF]);
     meta = Buffer.concat([meta, len]);
     meta[1] = LEN_16_BIT;
