@@ -10,7 +10,7 @@ const UPGRADE = [
   'HTTP/1.1 101 Switching Protocols',
   'Upgrade: websocket',
   'Connection: Upgrade',
-  'Sec-WebSocket-Accept: '
+  'Sec-WebSocket-Accept: ',
 ].join(EOL);
 const MAGIC = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 const MASK_LENGTH = 4;
@@ -66,7 +66,7 @@ class Connection {
     if (length < LEN_16_BIT) {
       meta[1] = length;
     } else if (length < MAX_16_BIT) {
-      const len = Buffer.from([(length & 0xFF00) >> 8, length & 0x00FF]);
+      const len = Buffer.from([(length & 0xff00) >> 8, length & 0x00ff]);
       meta = Buffer.concat([meta, len]);
       meta[1] = LEN_16_BIT;
     } else {
